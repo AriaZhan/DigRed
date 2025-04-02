@@ -1,4 +1,4 @@
-# DigRedByAI
+# DigRed
 
 ## 1. 智能采集层
 
