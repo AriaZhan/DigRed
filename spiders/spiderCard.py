@@ -164,7 +164,7 @@ if __name__ == "__main__":
         # 打印结果
         for i, note in enumerate(notes_data, 1):
             print(f"\n=== 笔记 {i} ===")
-            print(f"作者: {note['author']['name']} ({note['author']['url']})")
+            print(f"作者: {note['author']['name']} \n(作者主页: {note['author']['url']})")
             print(f"标题: {note['title']}")
             print(f"内容: {note['content'][:1000]}...")  # 只打印前1000字符
             print(f"日期: {note['date']}")
@@ -172,6 +172,6 @@ if __name__ == "__main__":
             print(f"图片数量: {len(note['images'])}")
             print(f"评论数量: {len(note['comments'])}")
             for j, comment in enumerate(note['comments'], 1):
-                print(f"  评论 {j}: {comment['user_name']} ({comment['user_link']}): {comment['content']}")
+                print(f"  评论 {j}: {comment['user_name']} \n(评论者主页: {comment['user_link']}): {comment['content']}")
     finally:
         scraper.close()
