@@ -1,16 +1,18 @@
 {
     "sqltools.connections": [
         {
-            "mysqlOptions": {
-                "authProtocol": "default",
-                "enableSsl": "Disabled"
-            },
             "previewLimit": 50,
-            "server": "localhost",
-            "port": 3306,
-            "driver": "MySQL",
-            "name": "bigdata",
-            "database": "bigdata",
+            "driver": "SQLite",
+            "database": "${workspaceFolder:bigdata-project}/myproject/db.sqlite3",
+            "name": "123"
+        },
+        {
+            "hiveCLIServiceProtocolVersion": "V7",
+            "previewLimit": 50,
+            "driver": "Hive",
+            "name": "hive",
+            "host": "192.168.1.8",
+            "port": 10000,
             "username": "root"
         }
     ]

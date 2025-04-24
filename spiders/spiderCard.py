@@ -3,10 +3,9 @@ from time import sleep
 import random
 from typing import List, Dict, Optional
 
-class XiaohongshuScraper:
+class XiaohongshuSearchScraper:
     def __init__(self, headless: bool = False):
-        """初始化小红书爬虫
-        
+        """
         Args:
             headless: 是否无头模式
         """
@@ -22,7 +21,7 @@ class XiaohongshuScraper:
         """
         # 打开搜索页面
         self.page.get(f'https://www.xiaohongshu.com/search_result?keyword={keyword}')
-        self._random_sleep(1, 2)
+        self._random_sleep(5, 10)
         
         # 选择笔记类型
         if note_type == "image":
@@ -35,20 +34,26 @@ class XiaohongshuScraper:
         
     def _set_sort_method(self, sort_by: str) -> None:
         """设置排序方式"""
-        self.page.ele('xpath:.//*[@class="filter-box"]', timeout=2).click()
+        self.page.ele('.reds-icon filter-icon').hover()
         self._random_sleep(2, 3)
         
-        if sort_by == "hot":
-            self.page.ele('text:最热').click()
-        elif sort_by == "time":
+        if sort_by == "综合":
+            self.page.ele('text:综合').click()
+        elif sort_by == "最多点赞":
+            self.page.ele('text:最多点赞').click()
+        elif sort_by == "最多收藏":
+            self.page.ele('text:最多收藏').click()
+        elif sort_by == "最多评论":
+            self.page.ele('text:最多评论').click()
+        elif sort_by == "最新":
             self.page.ele('text:最新').click()
         self._random_sleep(2, 3)
+
         
-    def scrape_notes(self, max_notes: int = 3, scroll_times: int = 1) -> List[Dict]:
+    def scrape_notes(self, scroll_times: int = 1) -> List[Dict]:
         """爬取笔记数据
         
         Args:
-            max_notes: 最大爬取笔记数量
             scroll_times: 滚动加载次数
             
         Returns:
@@ -59,8 +64,7 @@ class XiaohongshuScraper:
         for _ in range(scroll_times):
             cards = self.page.eles('xpath://section[contains(@class, "note-item")]')
             print(f'共找到{len(cards)}个卡片')
-            
-            for card in cards[:max_notes]:
+            for card in cards:
                 try:
                     note_data = self._process_note_card(card)
                     notes_data.append(note_data)
@@ -75,15 +79,18 @@ class XiaohongshuScraper:
     
     def _process_note_card(self, card) -> Dict:
         """处理单个笔记卡片"""
+        # 获取卡片链接
+        card_url = card.ele('xpath:.//*[contains(@class, "cover mask ld")]', timeout=2).attr('href')
         # 点击卡片
         title_url = card.ele(".footer").ele('.title', timeout=2)
         title_url.click()
         self.page.wait.load_start()
         self._random_sleep(1, 2)
-        
+        print(f"正在处理卡片: {self._get_note_title()}")
         # 提取笔记数据
         note_data = {
             "author": self._get_author_info(),
+            "url": card_url,
             "title": self._get_note_title(),
             "content": self._get_note_content(),
             "date": self._get_note_date(),
@@ -106,6 +113,7 @@ class XiaohongshuScraper:
             "url": author_info.eles('tag:a')[0].link
         }
     
+
     def _get_note_title(self) -> str:
         """获取笔记标题"""
         return self.page.ele('#detail-title', timeout=2).text
@@ -134,16 +142,21 @@ class XiaohongshuScraper:
     def _get_note_comments(self) -> List[Dict]:
         """获取笔记评论"""
         comments = []
-        for comment in self.page.eles('xpath://.//div[contains(@class, "parent-comment")]'):
+        comment_eles = self.page.eles('xpath://.//div[contains(@class, "parent-comment")]')
+        if not comment_eles:
+            return comments  # 没有评论，直接返回空列表
+
+        for comment in comment_eles:
             comments.append({
-                "id": comment.ele('xpath:.//*[@class="comment-item"]').attr('id'),
+                "comment_id": comment.ele('xpath:.//*[@class="comment-item"]').attr('id'),
                 "user_name": comment.ele('xpath:.//*[@class="name"]').text,
                 "user_link": comment.ele('xpath:.//*[@class="name"]').link,
-                "content": comment.ele('xpath:.//*[@class="note-text"]').text,
-                "time": comment.ele('xpath:.//*[@class="date"]').text,
-                "likes": comment.ele('xpath:.//*[@class="like"]').text,
-                "replies": comment.ele('xpath:.//*[@class="reply icon-container"]').text
+                "comment_content": comment.ele('xpath:.//*[@class="note-text"]').text,
+                "comment_date": comment.ele('xpath:.//*[@class="date"]').text,
+                "comment_likes": comment.ele('xpath:.//*[@class="like"]').text,
+                "comment_replies": comment.ele('xpath:.//*[@class="reply icon-container"]').text
             })
+
         return comments
     
     def _random_sleep(self, min_sec: float, max_sec: float) -> None:
@@ -156,15 +169,16 @@ class XiaohongshuScraper:
 
 # 使用示例
 if __name__ == "__main__":
-    scraper = XiaohongshuScraper()
+    scraper = XiaohongshuSearchScraper(headless=True)
     try:
-        scraper.search_notes(keyword="英语口语", note_type="image", sort_by="hot")
-        notes_data = scraper.scrape_notes(max_notes=10, scroll_times=1)
+        scraper.search_notes(keyword="口语", note_type="image", sort_by="最多评论")
+        notes_data = scraper.scrape_notes(scroll_times=1)
         
         # 打印结果
         for i, note in enumerate(notes_data, 1):
             print(f"\n=== 笔记 {i} ===")
             print(f"作者: {note['author']['name']} \n(作者主页: {note['author']['url']})")
+            print(f"链接: {note['url']}")
             print(f"标题: {note['title']}")
             print(f"内容: {note['content'][:1000]}...")  # 只打印前1000字符
             print(f"日期: {note['date']}")
